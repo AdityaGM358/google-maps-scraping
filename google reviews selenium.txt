@@ -1,0 +1,48 @@
+from selenium import webdriver
+driver = webdriver.Chrome()
+#London Victoria & Albert Museum URL
+url = 'https://www.google.com/maps/place/Victoria+and+Albert+Museum/@51.4966392,-0.17218,15z/data=!4m5!3m4!1s0x0:0x9eb7094dfdcd651f!8m2!3d51.4966392!4d-0.17218'
+driver.get(url)
+driver.find_element_by_xpath('//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[1]/div[4]/form/div[1]/div/button').click()
+#to make sure content is fully loaded we can use time.sleep() after navigating to each page
+import time
+time.sleep(3)
+url = 'https://www.google.com/maps/search/bicycle+store/@51.5026862,-0.1430242,13z/data=!3m1!4b1'
+try:
+    driver.find_element(By.CLASS_NAME, "widget-pane-link").click()
+except Exception:
+    response = BeautifulSoup(driver.page_source, 'html.parser')
+    # Check if there are any paid ads and avoid them
+    if response.find_all('span', {'class': 'ARktye-badge'}):
+        ad_count = len(response.find_all('span', {'class': 'ARktye-badge'}))
+        li = driver.find_elements(By.CLASS_NAME, "a4gq8e-aVTXAb-haAclf-jRmmHf-hSRGPd")
+        li[ad_count].click()
+    else:
+        driver.find_element(By.CLASS_NAME, "a4gq8e-aVTXAb-haAclf-jRmmHf-hSRGPd").click()
+        time.sleep(5)
+    driver.find_element(By.CLASS_NAME, "widget-pane-link").click()
+#Find the total number of reviews
+total_number_of_reviews = driver.find_element_by_xpath('//*[@id="pane"]/div/div[1]/div/div/div[2]/div[2]/div/div[2]/div[2]').text.split(" ")[0]
+total_number_of_reviews = int(total_number_of_reviews.replace(',','')) if ',' in total_number_of_reviews else int(total_number_of_reviews)
+#Find scroll layout
+scrollable_div = driver.find_element_by_xpath('//*[@id="pane"]/div/div[1]/div/div/div[2]')
+#Scroll as many times as necessary to load all reviews
+for i in range(0,(round(total_number_of_reviews/10 - 1))):
+        driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', 
+                scrollable_div)
+        time.sleep(1)
+response = BeautifulSoup(driver.page_source, 'html.parser')
+reviews = response.find_all('div', class_='ODSEW-ShBeI NIyLF-haAclf gm2-body-2')
+ef get_review_summary(result_set):
+    rev_dict = {'Review Rate': [],
+        'Review Time': [],
+        'Review Text' : []}
+    for result in result_set:
+        review_rate = result.find('span', class_='ODSEW-ShBeI-H1e3jb')["aria-label"]
+        review_time = result.find('span',class_='ODSEW-ShBeI-RgZmSc-date').text
+        review_text = result.find('span',class_='ODSEW-ShBeI-text').text
+        rev_dict['Review Rate'].append(review_rate)
+        rev_dict['Review Time'].append(review_time)
+        rev_dict['Review Text'].append(review_text)
+    import pandas as pd    
+    return(pd.DataFrame(rev_dict))
